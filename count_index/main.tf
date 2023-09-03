@@ -1,28 +1,35 @@
-variable "subnet" {
-  type = bool
-  default = true
-}
-
-data "aws_vpc" "vpc" {
-  default = true
-}
-
 # append index to resource name
-resource "aws_subnet" "public_subnets" {
-  count = var.subnet ? 3 : 0
-  cidr_block        = "172.32.0.0/28"
-  vpc_id            = data.aws_vpc.vpc.id
-  tags              = tomap(merge({ Name = "subnet-${count.index}" }))
+resource "aws_iam_user" "engineers" {
+  count = var.users ? 2 : 0
+  name  = "engineer-${count.index}"
+  path  = "/engineering/"
 }
 
 # append index as semantic names
 locals {
-  subnet_names = ["dev", "prod"]
+  user_names = ["Bob", "Carl"]
+}
+resource "aws_iam_user" "managers" {
+  count = var.users ? 2 : 0
+  name  = "${local.user_names[count.index]}-user"
+  path  = "/management/"
+}
+
+# resources for remote state
+resource "aws_vpc" "vpc" {
+  cidr_block = var.vpc_cidr
+}
+
+resource "aws_subnet" "public_subnets" {
+  for_each   = var.subnet ? toset(var.private_subnets_cidr) : []
+  cidr_block = each.value
+  vpc_id     = aws_vpc.vpc.id
+  tags       = tomap({ Name = "subnet-public-${each.key}" })
 }
 
 resource "aws_subnet" "private_subnets" {
-  count = var.subnet ? 2 : 0
-  cidr_block        = "172.32.0.0/28"
-  vpc_id            = data.aws_vpc.vpc.id
-  tags              = tomap(merge({ Name = "subnet-${local.subnet_names[count.index]}" }))
+  for_each   = var.subnet ? toset(var.public_subnets_cidr) : []
+  cidr_block = each.value
+  vpc_id     = aws_vpc.vpc.id
+  tags       = tomap({ Name = "subnet-private-${each.key}" })
 }
