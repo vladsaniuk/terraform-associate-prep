@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {}
-  required_providers  {
+  required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = ">= 4.65.0"
@@ -9,11 +9,11 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.region
+  region = var.region
 }
 
 variable "region" {
-  type = string
+  type        = string
   description = "AWS region"
-  default = "us-east-1"
+  default     = "us-east-1"
 }
